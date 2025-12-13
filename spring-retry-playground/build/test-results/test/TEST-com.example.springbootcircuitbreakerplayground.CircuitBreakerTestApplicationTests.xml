@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.springbootcircuitbreakerplayground.CircuitBreakerTestApplicationTests" tests="1" skipped="0" failures="0" errors="0" timestamp="2023-07-16T08:34:08" hostname="hyeon9mak-macbook-pro.local" time="0.171">
+  <properties/>
+  <testcase name="contextLoads()" classname="com.example.springbootcircuitbreakerplayground.CircuitBreakerTestApplicationTests" time="0.171"/>
+  <system-out><![CDATA[17:34:06.545 [Test worker] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.example.springbootcircuitbreakerplayground.CircuitBreakerTestApplicationTests]: CircuitBreakerTestApplicationTests does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+17:34:06.593 [Test worker] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration com.example.springbootcircuitbreakerplayground.CircuitBreakerTestApplication for test class com.example.springbootcircuitbreakerplayground.CircuitBreakerTestApplicationTests
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+ :: Spring Boot ::                (v3.1.0)
+
+2023-07-16T17:34:06.790+09:00  INFO 63382 --- [    Test worker] c.e.s.CircuitBreakerTestApplicationTests : Starting CircuitBreakerTestApplicationTests using Java 19.0.2 with PID 63382 (started by hyeon9mak in /Users/hyeon9mak/Github/Hyeon9mak/spring-boot-circuit-breaker-playground)
+2023-07-16T17:34:06.791+09:00  INFO 63382 --- [    Test worker] c.e.s.CircuitBreakerTestApplicationTests : No active profile set, falling back to 1 default profile: "default"
+2023-07-16T17:34:07.260+09:00  INFO 63382 --- [    Test worker] o.s.cloud.context.scope.GenericScope     : BeanFactory id=4fffcc01-18d3-34f8-989f-e477f6825297
+2023-07-16T17:34:08.056+09:00  INFO 63382 --- [    Test worker] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 23 endpoint(s) beneath base path '/actuator'
+2023-07-16T17:34:08.099+09:00  INFO 63382 --- [    Test worker] c.e.s.CircuitBreakerTestApplicationTests : Started CircuitBreakerTestApplicationTests in 1.449 seconds (process running for 1.977)
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
