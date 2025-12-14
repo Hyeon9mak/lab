@@ -1,4 +1,6 @@
 services:
+  # controller node 들이 zookeeper 역할을 대신한다.
+  # 이들은 정족수 기반 찬반 투표를 진행하기 때문에 최소 3대 이상이 필요하다.
   controller-1:
     image: apache/kafka:latest
     container_name: controller-1
@@ -12,6 +14,7 @@ services:
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
       KAFKA_CONTROLLER_QUORUM_VOTERS: 1@controller-1:9093,2@controller-2:9093,3@controller-3:9093
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      # 큰 메모리가 필요하지 않으므로, 메모리를 작게 설정
       KAFKA_HEAP_OPTS: "-Xms512m -Xmx512m"
 
   controller-2:
@@ -61,6 +64,7 @@ services:
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_CONTROLLER_QUORUM_VOTERS: 1@controller-1:9093,2@controller-2:9093,3@controller-3:9093
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      # 비교적 메모리를 여유있게 설정
       KAFKA_HEAP_OPTS: "-Xms2g -Xmx2g"
     depends_on:
       - controller-1

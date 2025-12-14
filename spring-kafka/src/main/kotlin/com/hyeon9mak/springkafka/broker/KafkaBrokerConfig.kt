@@ -1,4 +1,4 @@
-package com.hyeon9mak.springkafka
+package com.hyeon9mak.springkafka.broker
 
 import com.hyeon9mak.springkafka.Topics.KAFKA_STUDY_TOPIC
 import org.apache.kafka.clients.admin.AdminClientConfig
@@ -9,7 +9,7 @@ import org.springframework.kafka.config.TopicBuilder
 import org.springframework.kafka.core.KafkaAdmin
 
 @Configuration
-class KafkaConfig {
+class KafkaBrokerConfig {
 
     /**
      * KafkaAdmin Bean 설정
