@@ -27,4 +27,32 @@ class SpringKafkaApplicationTests @Autowired constructor(
         val receivedMessage = ReceivedMessageRepository.findByKey(key = key)
         assertThat(receivedMessage).isEqualTo(message)
     }
+
+    @Test
+    fun continuousSendAndReceiveTest() {
+        for (i in 1..10) {
+            val key = UUID.randomUUID()
+            val message = "continuous message #$i"
+
+            messageSender.sendMessage(key = key, message = message)
+            sleep(500) // wait for the message to be processed
+
+            val receivedMessage = ReceivedMessageRepository.findByKey(key = key)
+            assertThat(receivedMessage).isEqualTo(message)
+        }
+    }
+
+    @Test
+    fun sameIdContinuousSendAndReceiveTest() {
+        val key = UUID.randomUUID()
+        for (i in 1..10) {
+            val message = "same ID message #$i"
+
+            messageSender.sendMessage(key = key, message = message)
+            sleep(500) // wait for the message to be processed
+
+            val receivedMessage = ReceivedMessageRepository.findByKey(key = key)
+            assertThat(receivedMessage).isEqualTo(message)
+        }
+    }
 }

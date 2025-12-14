@@ -28,6 +28,7 @@ class KafkaProducerConfig {
         props[ProducerConfig.BOOTSTRAP_SERVERS_CONFIG] = "localhost:29092,localhost:39092,localhost:49092"
         props[ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG] = UUIDSerializer::class.java
         props[ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG] = StringSerializer::class.java
+        props[ProducerConfig.INTERCEPTOR_CLASSES_CONFIG] = listOf(KafkaProducerInterceptor::class.java.canonicalName)
         return props
     }
 }
