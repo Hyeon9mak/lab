@@ -1,5 +1,6 @@
 package com.hyeon9mak.springkafka
 
+import com.hyeon9mak.springkafka.Topics.KAFKA_STUDY_TOPIC
 import org.apache.kafka.clients.admin.AdminClientConfig
 import org.apache.kafka.clients.admin.NewTopic
 import org.springframework.context.annotation.Bean
@@ -17,7 +18,7 @@ class KafkaConfig {
      */
     @Bean
     fun admin(): KafkaAdmin = KafkaAdmin(mapOf(
-        AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG to "localhost:19092,localhost:39092,localhost:49092"),
+        AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG to "localhost:29092,localhost:39092,localhost:49092"),
     )
 
     /**
@@ -26,7 +27,7 @@ class KafkaConfig {
      * (단, kafka 2.4 이상 버전부터 유효한 방식)
      */
     @Bean
-    fun kafkaStudyTopic(): NewTopic = TopicBuilder.name("kafka-study-topic")
+    fun kafkaStudyTopic(): NewTopic = TopicBuilder.name(KAFKA_STUDY_TOPIC)
         .partitions(3)
         .replicas(3)
         .compact()

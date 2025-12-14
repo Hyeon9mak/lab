@@ -2,6 +2,8 @@ services:
   controller-1:
     image: apache/kafka:latest
     container_name: controller-1
+    mem_limit: 1g
+    mem_reservation: 512m
     environment:
       KAFKA_NODE_ID: 1
       KAFKA_PROCESS_ROLES: controller
@@ -10,10 +12,13 @@ services:
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
       KAFKA_CONTROLLER_QUORUM_VOTERS: 1@controller-1:9093,2@controller-2:9093,3@controller-3:9093
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_HEAP_OPTS: "-Xms512m -Xmx512m"
 
   controller-2:
     image: apache/kafka:latest
     container_name: controller-2
+    mem_limit: 1g
+    mem_reservation: 512m
     environment:
       KAFKA_NODE_ID: 2
       KAFKA_PROCESS_ROLES: controller
@@ -22,10 +27,13 @@ services:
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
       KAFKA_CONTROLLER_QUORUM_VOTERS: 1@controller-1:9093,2@controller-2:9093,3@controller-3:9093
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_HEAP_OPTS: "-Xms512m -Xmx512m"
 
   controller-3:
     image: apache/kafka:latest
     container_name: controller-3
+    mem_limit: 1g
+    mem_reservation: 512m
     environment:
       KAFKA_NODE_ID: 3
       KAFKA_PROCESS_ROLES: controller
@@ -34,10 +42,13 @@ services:
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
       KAFKA_CONTROLLER_QUORUM_VOTERS: 1@controller-1:9093,2@controller-2:9093,3@controller-3:9093
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_HEAP_OPTS: "-Xms512m -Xmx512m"
 
   broker-1:
     image: apache/kafka:latest
     container_name: broker-1
+    mem_limit: 3g
+    mem_reservation: 2g
     ports:
       - 29092:9092
     environment:
@@ -50,6 +61,7 @@ services:
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_CONTROLLER_QUORUM_VOTERS: 1@controller-1:9093,2@controller-2:9093,3@controller-3:9093
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_HEAP_OPTS: "-Xms2g -Xmx2g"
     depends_on:
       - controller-1
       - controller-2
@@ -58,6 +70,8 @@ services:
   broker-2:
     image: apache/kafka:latest
     container_name: broker-2
+    mem_limit: 3g
+    mem_reservation: 2g
     ports:
       - 39092:9092
     environment:
@@ -70,6 +84,8 @@ services:
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_CONTROLLER_QUORUM_VOTERS: 1@controller-1:9093,2@controller-2:9093,3@controller-3:9093
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_HEAP_OPTS: "-Xms2g -Xmx2g"
+      KAFKA_JVM_PERFORMANCE_OPTS: "-XX:+UseG1GC -XX:MaxGCPauseMillis=20 -XX:MaxDirectMemorySize=512m"
     depends_on:
       - controller-1
       - controller-2
@@ -78,6 +94,8 @@ services:
   broker-3:
     image: apache/kafka:latest
     container_name: broker-3
+    mem_limit: 3g
+    mem_reservation: 2g
     ports:
       - 49092:9092
     environment:
@@ -90,6 +108,8 @@ services:
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_CONTROLLER_QUORUM_VOTERS: 1@controller-1:9093,2@controller-2:9093,3@controller-3:9093
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_HEAP_OPTS: "-Xms2g -Xmx2g"
+      KAFKA_JVM_PERFORMANCE_OPTS: "-XX:+UseG1GC -XX:MaxGCPauseMillis=20 -XX:MaxDirectMemorySize=512m"
     depends_on:
       - controller-1
       - controller-2
