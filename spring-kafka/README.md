@@ -28,6 +28,12 @@
 - kafka 4.1 버전 기준 producer partitioner 는 message key 를 hash 하여 partition 을 결정한다.
   - 재발송 시에도 동일한 key 로 hash 를 수행하므로, 동일한 partition 으로 message 를 재발송 한다.
 
+#### 확인 절차
+- 최초 broker 와 producer(spring app) 사이 proxy server 를 띄워서 의도적으로 ACK 를 유실 시키려 했음
+  - 이 방법이 가장 명확하고 그냥 하면 되는데... 너무 귀찮음...
+- producer partitioner 가 message key 기반으로 partition 을 선정하는 것에서 아이디어 착안
+  - 동일한 message key 로 여러차례 발송, 서로 다른 message key 로 여러차례 발송 후 로그 체크
+
 **partition 3개 설정**
 
 <img width="728" height="242" alt="Image" src="https://github.com/user-attachments/assets/d7099fc8-bd44-49da-9329-bb5a0ddb8d3e" />
@@ -43,3 +49,10 @@
 **message key 를 계속 바꾸면서 발송을 진행하는 경우**
 
 <img width="1290" height="548" alt="Image" src="https://github.com/user-attachments/assets/2d386876-c0ee-4124-9314-643e8e5f910c" />
+
+#### 번외 - 직접 실험해보진 않았지만 추론 가능한 것
+- 일시적인 네트워크 이슈로 ACK 를 유실한게 아니라, broker 자체 장애가 발생했다면?
+  - producer 는 계속해서 같은 parition 으로 message 재발송을 진행한다.
+  - (Kraft mode 기준) controller 가 이를 인지하고, ISR 중 하나를 Leader 로 승격 후 producer 에게 알림
+  - 재발송 중 Leader 변경 응답을 받게된 producer 는 broker metadata 요청을 보내서 정보 갱신
+  - 이후 재발송 성공, 다시 발송 시작
