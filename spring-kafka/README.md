@@ -38,6 +38,8 @@
 
 <img width="728" height="242" alt="Image" src="https://github.com/user-attachments/assets/d7099fc8-bd44-49da-9329-bb5a0ddb8d3e" />
 
+<img width="1142" height="489" alt="image" src="https://github.com/user-attachments/assets/8fdf45b1-9ea1-4653-b864-a4be3aded6d9" />
+
 **producer partitioner 구현체**
 
 <img width="1222" height="454" alt="Image" src="https://github.com/user-attachments/assets/ff4eb550-89ef-4235-b8f7-df14fb9add0d" />
