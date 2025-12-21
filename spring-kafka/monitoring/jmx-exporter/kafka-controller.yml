@@ -1,0 +1,49 @@
+lowercaseOutputName: true
+lowercaseOutputLabelNames: true
+
+rules:
+  # Controller metrics
+  - pattern: kafka.controller<type=KafkaController, name=(.+)><>Value
+    name: kafka_controller_kafkacontroller_$1
+    type: GAUGE
+
+  # ControllerStats - Count metrics (COUNTER)
+  - pattern: kafka.controller<type=ControllerStats, name=(.+)><>Count
+    name: kafka_controller_controllerstats_$1_total
+    type: COUNTER
+
+  # ControllerStats - OneMinuteRate metrics (GAUGE)
+  - pattern: kafka.controller<type=ControllerStats, name=(.+)><>OneMinuteRate
+    name: kafka_controller_controllerstats_$1_rate
+    type: GAUGE
+
+  # ControllerStats - Mean metrics (GAUGE)
+  - pattern: kafka.controller<type=ControllerStats, name=(.+)><>Mean
+    name: kafka_controller_controllerstats_$1_mean
+    type: GAUGE
+
+  # KRaft mode - Raft metrics
+  - pattern: kafka.server<type=raft-metrics, id=(.+)><>(.+)
+    name: kafka_server_raft_$2
+    type: GAUGE
+    labels:
+      raft_id: "$1"
+
+  # JVM metrics (동일)
+  - pattern: 'java.lang<type=Memory><HeapMemoryUsage>(.+)'
+    name: java_lang_memory_heapmemoryusage_$1
+    type: GAUGE
+
+  - pattern: 'java.lang<type=Memory><NonHeapMemoryUsage>(.+)'
+    name: java_lang_memory_nonheapmemoryusage_$1
+    type: GAUGE
+
+  - pattern: java.lang<type=GarbageCollector, name=(.+)><>CollectionCount
+    name: java_lang_garbagecollector_collectioncount
+    type: COUNTER
+    labels:
+      gc: "$1"
+
+  - pattern: java.lang<type=Threading><>ThreadCount
+    name: java_lang_threading_threadcount
+    type: GAUGE

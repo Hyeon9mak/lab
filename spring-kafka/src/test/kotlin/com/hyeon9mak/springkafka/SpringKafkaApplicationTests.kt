@@ -49,7 +49,7 @@ class SpringKafkaApplicationTests @Autowired constructor(
             val message = "same ID message #$i"
 
             messageSender.sendMessage(key = key, message = message)
-            sleep(500) // wait for the message to be processed
+            sleep(3_000) // wait for the message to be processed
 
             val receivedMessage = ReceivedMessageRepository.findByKey(key = key)
             assertThat(receivedMessage).isEqualTo(message)

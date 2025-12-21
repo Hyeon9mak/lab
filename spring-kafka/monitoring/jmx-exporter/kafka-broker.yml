@@ -1,0 +1,135 @@
+lowercaseOutputName: true
+lowercaseOutputLabelNames: true
+
+rules:
+  # Server metrics - Replica Manager - Value metrics
+  - pattern: kafka.server<type=ReplicaManager, name=(.+)><>Value
+    name: kafka_server_replicamanager_$1
+    type: GAUGE
+
+  # Server metrics - Replica Manager - OneMinuteRate metrics
+  - pattern: kafka.server<type=ReplicaManager, name=(.+)><>OneMinuteRate
+    name: kafka_server_replicamanager_$1_rate
+    type: GAUGE
+
+  # Server metrics - BrokerTopicMetrics - Count metrics (COUNTER type with _total suffix)
+  - pattern: kafka.server<type=BrokerTopicMetrics, name=(.+), topic=(.+)><>Count
+    name: kafka_server_brokertopicmetrics_$1_total
+    type: COUNTER
+    labels:
+      topic: "$2"
+
+  - pattern: kafka.server<type=BrokerTopicMetrics, name=(.+)><>Count
+    name: kafka_server_brokertopicmetrics_$1_total
+    type: COUNTER
+
+  # Server metrics - BrokerTopicMetrics - OneMinuteRate metrics (GAUGE type)
+  - pattern: kafka.server<type=BrokerTopicMetrics, name=(.+), topic=(.+)><>OneMinuteRate
+    name: kafka_server_brokertopicmetrics_$1_rate
+    type: GAUGE
+    labels:
+      topic: "$2"
+
+  - pattern: kafka.server<type=BrokerTopicMetrics, name=(.+)><>OneMinuteRate
+    name: kafka_server_brokertopicmetrics_$1_rate
+    type: GAUGE
+
+  # Server metrics - BrokerTopicMetrics - MeanRate metrics (GAUGE type)
+  - pattern: kafka.server<type=BrokerTopicMetrics, name=(.+), topic=(.+)><>MeanRate
+    name: kafka_server_brokertopicmetrics_$1_mean_rate
+    type: GAUGE
+    labels:
+      topic: "$2"
+
+  - pattern: kafka.server<type=BrokerTopicMetrics, name=(.+)><>MeanRate
+    name: kafka_server_brokertopicmetrics_$1_mean_rate
+    type: GAUGE
+
+  # Network metrics - RequestMetrics - Count metrics (COUNTER)
+  - pattern: kafka.network<type=RequestMetrics, name=(.+), request=(.+)><>Count
+    name: kafka_network_requestmetrics_$1_total
+    type: COUNTER
+    labels:
+      request: "$2"
+
+  # Network metrics - RequestMetrics - OneMinuteRate (GAUGE)
+  - pattern: kafka.network<type=RequestMetrics, name=(.+), request=(.+)><>OneMinuteRate
+    name: kafka_network_requestmetrics_$1_rate
+    type: GAUGE
+    labels:
+      request: "$2"
+
+  # Network metrics - RequestMetrics - Mean/Max/Min (GAUGE)
+  - pattern: kafka.network<type=RequestMetrics, name=(.+), request=(.+)><>(Mean|Max|Min)
+    name: kafka_network_requestmetrics_$1_$3
+    type: GAUGE
+    labels:
+      request: "$2"
+
+  # Network metrics - RequestMetrics - Percentiles (50th, 75th, 95th, 98th, 99th)
+  - pattern: kafka.network<type=RequestMetrics, name=(.+), request=(.+)><>(\d+)thPercentile
+    name: kafka_network_requestmetrics_$1
+    type: GAUGE
+    labels:
+      request: "$2"
+      quantile: "0.$3"
+
+  # Log metrics
+  - pattern: kafka.log<type=Log, name=(.+), topic=(.+), partition=(.+)><>Value
+    name: kafka_log_log_$1
+    type: GAUGE
+    labels:
+      topic: "$2"
+      partition: "$3"
+
+  # LogFlushStats - Count metrics (COUNTER)
+  - pattern: kafka.log<type=LogFlushStats, name=(.+)><>Count
+    name: kafka_log_logflushstats_$1_total
+    type: COUNTER
+
+  # LogFlushStats - Other metrics (GAUGE)
+  - pattern: kafka.log<type=LogFlushStats, name=(.+)><>(OneMinuteRate|Mean|Max)
+    name: kafka_log_logflushstats_$1_$2
+    type: GAUGE
+
+  # Controller metrics
+  - pattern: kafka.controller<type=KafkaController, name=(.+)><>Value
+    name: kafka_controller_kafkacontroller_$1
+    type: GAUGE
+
+  # Partition metrics
+  - pattern: kafka.cluster<type=Partition, name=(.+), topic=(.+), partition=(.+)><>Value
+    name: kafka_cluster_partition_$1
+    type: GAUGE
+    labels:
+      topic: "$2"
+      partition: "$3"
+
+  # JVM metrics
+  - pattern: 'java.lang<type=Memory><HeapMemoryUsage>(.+)'
+    name: java_lang_memory_heapmemoryusage_$1
+    type: GAUGE
+
+  - pattern: 'java.lang<type=Memory><NonHeapMemoryUsage>(.+)'
+    name: java_lang_memory_nonheapmemoryusage_$1
+    type: GAUGE
+
+  - pattern: java.lang<type=GarbageCollector, name=(.+)><>CollectionCount
+    name: java_lang_garbagecollector_collectioncount
+    type: COUNTER
+    labels:
+      gc: "$1"
+
+  - pattern: java.lang<type=GarbageCollector, name=(.+)><>CollectionTime
+    name: java_lang_garbagecollector_collectiontime
+    type: COUNTER
+    labels:
+      gc: "$1"
+
+  - pattern: java.lang<type=Threading><>ThreadCount
+    name: java_lang_threading_threadcount
+    type: GAUGE
+
+  - pattern: java.lang<type=OperatingSystem><>ProcessCpuLoad
+    name: java_lang_operatingsystem_processcpuload
+    type: GAUGE

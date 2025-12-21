@@ -1,0 +1,44 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'spring-kafka-lab'
+    environment: 'local'
+
+scrape_configs:
+  # Kafka Controllers
+  - job_name: 'kafka-controllers'
+    static_configs:
+      - targets:
+          - 'controller-1:7091'
+          - 'controller-2:7091'
+          - 'controller-3:7091'
+        labels:
+          cluster: 'kafka-cluster'
+          role: 'controller'
+
+  # Kafka Brokers
+  - job_name: 'kafka-brokers'
+    static_configs:
+      - targets:
+          - 'broker-1:7071'
+          - 'broker-2:7071'
+          - 'broker-3:7071'
+        labels:
+          cluster: 'kafka-cluster'
+          role: 'broker'
+
+  # Spring Boot Application (로컬 실행)
+  - job_name: 'spring-boot-kafka'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets:
+          - 'host.docker.internal:8080'
+        labels:
+          application: 'spring-kafka'
+
+  # Prometheus 자체 모니터링
+  - job_name: 'prometheus'
+    static_configs:
+      - targets:
+          - 'localhost:9090'

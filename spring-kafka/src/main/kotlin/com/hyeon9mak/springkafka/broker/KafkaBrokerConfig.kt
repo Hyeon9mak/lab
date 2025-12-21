@@ -1,6 +1,7 @@
 package com.hyeon9mak.springkafka.broker
 
 import com.hyeon9mak.springkafka.Topics.KAFKA_STUDY_TOPIC
+import com.hyeon9mak.springkafka.Topics.박시준_오은경_유수민_지각
 import org.apache.kafka.clients.admin.AdminClientConfig
 import org.apache.kafka.clients.admin.NewTopic
 import org.springframework.context.annotation.Bean
@@ -28,6 +29,13 @@ class KafkaBrokerConfig {
      */
     @Bean
     fun kafkaStudyTopic(): NewTopic = TopicBuilder.name(KAFKA_STUDY_TOPIC)
+        .partitions(3)
+        .replicas(3)
+        .compact()
+        .build()
+
+    @Bean
+    fun 박시준_오은경_유수민_지각_Topic(): NewTopic = TopicBuilder.name(박시준_오은경_유수민_지각)
         .partitions(3)
         .replicas(3)
         .compact()

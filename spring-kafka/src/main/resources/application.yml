@@ -1,0 +1,27 @@
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+      base-path: /actuator
+  metrics:
+    tags:
+      application: ${spring.application.name:spring-kafka}
+    export:
+      prometheus:
+        enabled: true
+    distribution:
+      percentiles-histogram:
+        "[http.server.requests]": true
+  endpoint:
+    health:
+      show-details: always
+    prometheus:
+      enabled: true
+
+spring:
+  application:
+    name: spring-kafka
+
+server:
+  port: 8080
