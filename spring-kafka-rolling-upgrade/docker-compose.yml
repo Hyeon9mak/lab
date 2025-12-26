@@ -1,0 +1,216 @@
+services:
+  # controller node 들이 zookeeper 역할을 대신한다.
+  # 이들은 정족수 기반 찬반 투표를 진행하기 때문에 최소 3대 이상이 필요하다.
+  controller-1:
+    image: apache/kafka:latest
+    container_name: controller-1
+    mem_limit: 1g
+    mem_reservation: 512m
+    volumes:
+      - ./monitoring/jmx-exporter:/opt/jmx-exporter
+    ports:
+      - "7091:7091"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: controller
+      KAFKA_LISTENERS: CONTROLLER://:9093
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@controller-1:9093,2@controller-2:9093,3@controller-3:9093
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      # 큰 메모리가 필요하지 않으므로, 메모리를 작게 설정
+      KAFKA_HEAP_OPTS: "-Xms512m -Xmx512m"
+      KAFKA_OPTS: "-javaagent:/opt/jmx-exporter/jmx_prometheus_javaagent-1.0.1.jar=7091:/opt/jmx-exporter/kafka-controller.yml"
+    networks:
+      - kafka-network
+
+  controller-2:
+    image: apache/kafka:latest
+    container_name: controller-2
+    mem_limit: 1g
+    mem_reservation: 512m
+    volumes:
+      - ./monitoring/jmx-exporter:/opt/jmx-exporter
+    ports:
+      - "7092:7091"
+    environment:
+      KAFKA_NODE_ID: 2
+      KAFKA_PROCESS_ROLES: controller
+      KAFKA_LISTENERS: CONTROLLER://:9093
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@controller-1:9093,2@controller-2:9093,3@controller-3:9093
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_HEAP_OPTS: "-Xms512m -Xmx512m"
+      KAFKA_OPTS: "-javaagent:/opt/jmx-exporter/jmx_prometheus_javaagent-1.0.1.jar=7091:/opt/jmx-exporter/kafka-controller.yml"
+    networks:
+      - kafka-network
+
+  controller-3:
+    image: apache/kafka:latest
+    container_name: controller-3
+    mem_limit: 1g
+    mem_reservation: 512m
+    volumes:
+      - ./monitoring/jmx-exporter:/opt/jmx-exporter
+    ports:
+      - "7093:7091"
+    environment:
+      KAFKA_NODE_ID: 3
+      KAFKA_PROCESS_ROLES: controller
+      KAFKA_LISTENERS: CONTROLLER://:9093
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@controller-1:9093,2@controller-2:9093,3@controller-3:9093
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_HEAP_OPTS: "-Xms512m -Xmx512m"
+      KAFKA_OPTS: "-javaagent:/opt/jmx-exporter/jmx_prometheus_javaagent-1.0.1.jar=7091:/opt/jmx-exporter/kafka-controller.yml"
+    networks:
+      - kafka-network
+
+  broker-1:
+    image: apache/kafka:latest
+    container_name: broker-1
+    mem_limit: 3g
+    mem_reservation: 2g
+    volumes:
+      - ./monitoring/jmx-exporter:/opt/jmx-exporter
+    ports:
+      - 29092:9092
+      - "7071:7071"
+    environment:
+      KAFKA_NODE_ID: 4
+      KAFKA_PROCESS_ROLES: broker
+      KAFKA_LISTENERS: 'PLAINTEXT://:19092,PLAINTEXT_HOST://:9092'
+      KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://broker-1:19092,PLAINTEXT_HOST://localhost:29092'
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@controller-1:9093,2@controller-2:9093,3@controller-3:9093
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      # 비교적 메모리를 여유있게 설정
+      KAFKA_HEAP_OPTS: "-Xms2g -Xmx2g"
+      KAFKA_OPTS: "-javaagent:/opt/jmx-exporter/jmx_prometheus_javaagent-1.0.1.jar=7071:/opt/jmx-exporter/kafka-broker.yml"
+    depends_on:
+      - controller-1
+      - controller-2
+      - controller-3
+    networks:
+      - kafka-network
+
+  broker-2:
+    image: apache/kafka:latest
+    container_name: broker-2
+    mem_limit: 3g
+    mem_reservation: 2g
+    volumes:
+      - ./monitoring/jmx-exporter:/opt/jmx-exporter
+    ports:
+      - 39092:9092
+      - "7072:7071"
+    environment:
+      KAFKA_NODE_ID: 5
+      KAFKA_PROCESS_ROLES: broker
+      KAFKA_LISTENERS: 'PLAINTEXT://:19092,PLAINTEXT_HOST://:9092'
+      KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://broker-2:19092,PLAINTEXT_HOST://localhost:39092'
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@controller-1:9093,2@controller-2:9093,3@controller-3:9093
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_HEAP_OPTS: "-Xms2g -Xmx2g"
+      KAFKA_JVM_PERFORMANCE_OPTS: "-XX:+UseG1GC -XX:MaxGCPauseMillis=20 -XX:MaxDirectMemorySize=512m"
+      KAFKA_OPTS: "-javaagent:/opt/jmx-exporter/jmx_prometheus_javaagent-1.0.1.jar=7071:/opt/jmx-exporter/kafka-broker.yml"
+    depends_on:
+      - controller-1
+      - controller-2
+      - controller-3
+    networks:
+      - kafka-network
+
+  broker-3:
+    image: apache/kafka:latest
+    container_name: broker-3
+    mem_limit: 3g
+    mem_reservation: 2g
+    volumes:
+      - ./monitoring/jmx-exporter:/opt/jmx-exporter
+    ports:
+      - 49092:9092
+      - "7073:7071"
+    environment:
+      KAFKA_NODE_ID: 6
+      KAFKA_PROCESS_ROLES: broker
+      KAFKA_LISTENERS: 'PLAINTEXT://:19092,PLAINTEXT_HOST://:9092'
+      KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://broker-3:19092,PLAINTEXT_HOST://localhost:49092'
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@controller-1:9093,2@controller-2:9093,3@controller-3:9093
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_HEAP_OPTS: "-Xms2g -Xmx2g"
+      KAFKA_JVM_PERFORMANCE_OPTS: "-XX:+UseG1GC -XX:MaxGCPauseMillis=20 -XX:MaxDirectMemorySize=512m"
+      KAFKA_OPTS: "-javaagent:/opt/jmx-exporter/jmx_prometheus_javaagent-1.0.1.jar=7071:/opt/jmx-exporter/kafka-broker.yml"
+    depends_on:
+      - controller-1
+      - controller-2
+      - controller-3
+    networks:
+      - kafka-network
+
+  prometheus:
+    image: prom/prometheus:v2.48.1
+    container_name: prometheus
+    mem_limit: 512m
+    mem_reservation: 256m
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus:/etc/prometheus
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=30d'
+      - '--web.enable-lifecycle'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    depends_on:
+      - broker-1
+      - broker-2
+      - broker-3
+    networks:
+      - kafka-network
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:10.2.3
+    container_name: grafana
+    mem_limit: 512m
+    mem_reservation: 256m
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+      - grafana-data:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SERVER_ROOT_URL=http://localhost:3000
+      - GF_INSTALL_PLUGINS=grafana-piechart-panel,grafana-clock-panel
+    depends_on:
+      - prometheus
+    networks:
+      - kafka-network
+    restart: unless-stopped
+
+networks:
+  kafka-network:
+    driver: bridge
+
+volumes:
+  prometheus-data:
+    driver: local
+  grafana-data:
+    driver: local
