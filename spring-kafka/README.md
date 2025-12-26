@@ -1,4 +1,4 @@
-# spring-kafka
+# spring-kafka (with monitoring)
 
 ## how to build and run
 
@@ -7,6 +7,13 @@
     - broker-1, broker-2, broker-3 모두 container 내부 9092 포트로 통신
     - host 기준으로는 broker-1:29093, broker-2:39093, broker-3:49093
     - broker 들의 메모리 할당이 크게 되어 있으므로, docker machine 의 메모리 설정을 충분히 늘려줄 것 (8GB 권장)
+      - 혹은, `docker-compose.yml` 파일 내 broker 들의 `KAFKA_HEAP_OPTS` 설정을 줄여줄 것
+    - `docker-compose up -d` 내부 prometheus, grafana container 도 함께 실행됨
+
+- grafana 접속 정보
+  - url: `http://localhost:3000`
+  - id/pw: `admin/admin`
+  - imported dashboard: `kafka-overview.json` (grafana/dashboard 폴더 내 위치)
 
 - `src/test/kotlin/com/hyeon9mak/springkafka/SpringKafkaApplicationTests.kt` 파일 참고
 
