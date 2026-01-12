@@ -25,7 +25,11 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-flyway")
     implementation("org.flywaydb:flyway-mysql")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
+    implementation("io.github.microutils:kotlin-logging-jvm:2.1.21")
+    implementation("net.logstash.logback:logstash-logback-encoder:8.0")
+
     runtimeOnly("org.mariadb.jdbc:mariadb-java-client")
+
     testImplementation("org.springframework.boot:spring-boot-starter-batch-test")
     testImplementation("org.springframework.boot:spring-boot-starter-data-jdbc-test")
     testImplementation("org.springframework.boot:spring-boot-starter-flyway-test")
