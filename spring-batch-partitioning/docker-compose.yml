@@ -1,0 +1,13 @@
+version: '3.1'
+services:
+  cooking_log_db:
+    image: mariadb:latest
+    container_name: cooking_log_db
+    restart: always
+    ports:
+      - "3306:3306"
+    environment:
+      MARIADB_DATABASE: cooking_log
+      MARIADB_USER: cooking_log
+      MARIADB_PASSWORD: cooking_log
+      MARIADB_ROOT_PASSWORD: root
