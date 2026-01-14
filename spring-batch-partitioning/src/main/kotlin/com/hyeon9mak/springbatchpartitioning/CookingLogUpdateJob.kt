@@ -1,15 +1,12 @@
 package com.hyeon9mak.springbatchpartitioning
 
 import org.springframework.batch.core.configuration.annotation.StepScope
-import org.springframework.batch.core.job.Job
-import org.springframework.batch.core.job.builder.JobBuilder
-import org.springframework.batch.core.repository.JobRepository
-import org.springframework.batch.core.step.Step
-import org.springframework.batch.core.step.builder.StepBuilder
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.core.task.TaskExecutor
 import org.springframework.jdbc.core.JdbcTemplate
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -17,6 +14,19 @@ import java.time.format.DateTimeFormatter
 
 @Configuration
 class CookingLogUpdateJob {
+
+    @Bean("$JOB_NAME-task-pool")
+    fun executor(
+        @Value("\${batch.job.cooking-log-update.pool-size}") poolSize: Int,
+    ): TaskExecutor {
+        val executor = ThreadPoolTaskExecutor()
+        executor.corePoolSize = poolSize
+        executor.maxPoolSize = poolSize
+        executor.setThreadNamePrefix("partition-thread")
+        executor.setWaitForTasksToCompleteOnShutdown(true)
+        executor.initialize()
+        return executor
+    }
 
     @Bean("$STEP_NAME-partitioner")
     @StepScope
