@@ -11,8 +11,3 @@ spring:
     url: jdbc:mariadb://localhost:3306/cooking_log
     user: cooking_log
     password: cooking_log
-
-batch:
-  job:
-    cooking-log-update:
-      pool-size: 5

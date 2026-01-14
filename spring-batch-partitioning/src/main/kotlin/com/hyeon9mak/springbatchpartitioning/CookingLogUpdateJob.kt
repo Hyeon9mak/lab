@@ -1,6 +1,10 @@
 package com.hyeon9mak.springbatchpartitioning
 
 import org.springframework.batch.core.configuration.annotation.StepScope
+import org.springframework.batch.core.partition.support.TaskExecutorPartitionHandler
+import org.springframework.batch.core.repository.JobRepository
+import org.springframework.batch.core.step.Step
+import org.springframework.batch.core.step.builder.StepBuilder
 import org.springframework.batch.infrastructure.item.Chunk
 import org.springframework.batch.infrastructure.item.ItemProcessor
 import org.springframework.batch.infrastructure.item.ItemWriter
@@ -25,12 +29,10 @@ import javax.sql.DataSource
 class CookingLogUpdateJob {
 
     @Bean("$JOB_NAME-task-pool")
-    fun executor(
-        @Value("\${batch.job.cooking-log-update.pool-size}") poolSize: Int,
-    ): TaskExecutor {
+    fun executor(): TaskExecutor {
         val executor = ThreadPoolTaskExecutor()
-        executor.corePoolSize = poolSize
-        executor.maxPoolSize = poolSize
+        executor.corePoolSize = POOL_SIZE
+        executor.maxPoolSize = POOL_SIZE
         executor.setThreadNamePrefix("partition-thread")
         executor.setWaitForTasksToCompleteOnShutdown(true)
         executor.initialize()
@@ -57,6 +59,16 @@ class CookingLogUpdateJob {
         )
     }
 
+    @Bean(STEP_NAME)
+    fun eatStep(jobRepository: JobRepository): Step {
+        return StepBuilder(jobRepository)
+            .chunk<EatableCookingLog, AteCookingLog>(CHUNK_SIZE)
+            .reader(reader(null, null, null, null, null))
+            .processor(processor())
+            .writer(writer(null))
+            .build()
+    }
+
     @Bean("$STEP_NAME-reader")
     @StepScope
     fun reader(
@@ -68,7 +80,7 @@ class CookingLogUpdateJob {
     ): JdbcCursorItemReader<EatableCookingLog> {
         val sql = """
         SELECT 
-            id, name, description, status, cooked_at
+            id, status
         FROM
             cooking_log
         WHERE (cooked_at, id) >= (?, ?::uuid)
@@ -114,6 +126,7 @@ class CookingLogUpdateJob {
         private const val STEP_NAME = "eat-step"
         private const val STEP_MANAGER = "eat-step-manager"
         private const val CHUNK_SIZE = 100_000
+        private const val POOL_SIZE = 5
 
         private val KST_ZONE_ID: ZoneId = ZoneId.of("Asia/Seoul")
         private val ROW_MAPPER = RowMapper { rs, _ ->
