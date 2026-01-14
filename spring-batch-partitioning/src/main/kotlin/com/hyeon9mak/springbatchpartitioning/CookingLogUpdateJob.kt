@@ -1,15 +1,21 @@
 package com.hyeon9mak.springbatchpartitioning
 
 import org.springframework.batch.core.configuration.annotation.StepScope
+import org.springframework.batch.infrastructure.item.database.JdbcCursorItemReader
+import org.springframework.batch.infrastructure.item.database.builder.JdbcCursorItemReaderBuilder
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.core.task.TaskExecutor
 import org.springframework.jdbc.core.JdbcTemplate
+import org.springframework.jdbc.core.RowMapper
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
+import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.util.UUID
+import javax.sql.DataSource
 
 
 @Configuration
@@ -38,7 +44,6 @@ class CookingLogUpdateJob {
         val startDateInstant = LocalDate.parse(startDate, DateTimeFormatter.ISO_LOCAL_DATE)
             .atStartOfDay(KST_ZONE_ID)
             .toInstant()
-
         val endDateInstant = LocalDate.parse(endDate, DateTimeFormatter.ISO_LOCAL_DATE)
             .atStartOfDay(KST_ZONE_ID)
             .toInstant()
@@ -49,10 +54,55 @@ class CookingLogUpdateJob {
         )
     }
 
+    @Bean("$STEP_NAME-reader")
+    @StepScope
+    fun reader(
+        @Value("#{stepExecutionContext['startCookedAt']}") startCookedAt: Instant,
+        @Value("#{stepExecutionContext['startId']}") startId: String,
+        @Value("#{stepExecutionContext['endCookedAt']}") endCookedAt: Instant,
+        @Value("#{stepExecutionContext['endId']}") endId: String,
+        dataSource: DataSource,
+    ): JdbcCursorItemReader<UpdatableCookingLog> {
+        val sql = """
+        SELECT 
+            id, name, description, status, cooked_at
+        FROM
+            cooking_log
+        WHERE (cooked_at, id) >= (?, ?::uuid)
+          AND (cooked_at, id) <= (?, ?::uuid)
+        ORDER BY cooked_at, id
+    """.trimIndent()
+
+        return JdbcCursorItemReaderBuilder<UpdatableCookingLog>()
+            .name("partitionReader")
+            .dataSource(dataSource)
+            .sql(sql)
+            .preparedStatementSetter { ps ->
+                ps.setObject(1, startCookedAt)
+                ps.setString(2, startId)
+                ps.setObject(3, endCookedAt)
+                ps.setString(4, endId)
+            }
+            .fetchSize(CHUNK_SIZE)
+            .rowMapper(ROW_MAPPER)
+            .build()
+    }
+
     companion object {
         private const val JOB_NAME = "cooking-log-update"
         private const val STEP_NAME = "eat-step"
         private const val STEP_MANAGER = "eat-step-manager"
+        private const val CHUNK_SIZE = 100_000
         private val KST_ZONE_ID: ZoneId = ZoneId.of("Asia/Seoul")
+        private val ROW_MAPPER = RowMapper { rs, _ ->
+            UpdatableCookingLog(
+                id = rs.getObject("id", UUID::class.java),
+                name = rs.getString("name"),
+                description = rs.getString("description"),
+                status = CookingLogStatus.findByName(name = rs.getString("status")),
+                cookedAt = rs.getObject("cooked_at", Instant::class.java)
+            )
+
+        }
     }
 }

@@ -23,9 +23,9 @@ class CookingLogIdRangePartitioner(
         
         return boundaries.mapIndexed { index, boundary ->
             "partition$index" to ExecutionContext().apply {
-                put("startCreatedAt", boundary.startCreatedAt)
+                put("startCookedAt", boundary.startCookedAt)
                 putString("startId", boundary.startId.toString())
-                put("endCreatedAt", boundary.endCreatedAt)
+                put("endCookedAt", boundary.endCookedAt)
                 putString("endId", boundary.endId.toString())
             }
         }.toMap(LinkedHashMap())
@@ -35,7 +35,7 @@ class CookingLogIdRangePartitioner(
         val sql = """
             SELECT COUNT(*) 
             FROM cooking_log
-            WHERE created_at >= ? AND created_at < ?
+            WHERE cooked_at >= ? AND cooked_at < ?
         """.trimIndent()
 
         return jdbcTemplate.queryForObject(sql, Int::class.java, startDate, endDate) ?: 0
@@ -46,15 +46,15 @@ class CookingLogIdRangePartitioner(
             WITH partitioned AS (
                 SELECT 
                     id,
-                    created_at,
-                    NTILE(?) OVER (ORDER BY created_at, id) AS bucket
+                    cooked_at,
+                    NTILE(?) OVER (ORDER BY cooked_at, id) AS bucket
                 FROM your_table
-                WHERE created_at >= ? AND created_at < ?
+                WHERE cooked_at >= ? AND cooked_at < ?
             )
             SELECT 
-                MIN(created_at) AS start_created_at,
+                MIN(cooked_at) AS start_cooked_at,
                 MIN(id) AS start_id,
-                MAX(created_at) AS end_created_at,
+                MAX(cooked_at) AS end_cooked_at,
                 MAX(id) AS end_id
             FROM partitioned
             GROUP BY bucket
@@ -63,18 +63,18 @@ class CookingLogIdRangePartitioner(
 
         return jdbcTemplate.query(sql, { rs, _ ->
             PartitionBoundary(
-                startCreatedAt = rs.getObject("start_created_at", Instant::class.java),
+                startCookedAt = rs.getObject("start_cooked_at", Instant::class.java),
                 startId = UUID.fromString(rs.getString("start_id")),
-                endCreatedAt = rs.getObject("end_created_at", Instant::class.java),
+                endCookedAt = rs.getObject("end_cooked_at", Instant::class.java),
                 endId = UUID.fromString(rs.getString("end_id"))
             )
         }, gridSize, startOfDay, endOfDay)
     }
 
     private data class PartitionBoundary(
-        val startCreatedAt: Instant,
+        val startCookedAt: Instant,
         val startId: UUID,
-        val endCreatedAt: Instant,
+        val endCookedAt: Instant,
         val endId: UUID
     )
 
