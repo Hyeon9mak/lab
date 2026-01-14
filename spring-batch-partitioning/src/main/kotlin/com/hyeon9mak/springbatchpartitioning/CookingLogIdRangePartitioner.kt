@@ -6,7 +6,10 @@ import org.springframework.jdbc.core.JdbcTemplate
 import java.time.Instant
 import java.util.UUID
 
-class CookingLogIdRangePartitioner(
+/**
+ * Partitioner 는 CGLIB 를 사용하여 proxy 객체로 생성되므로, 상속(open)을 허용해야한다.
+ */
+open class CookingLogIdRangePartitioner(
     private val jdbcTemplate: JdbcTemplate,
     private val startDate: Instant,
     private val endDate: Instant,

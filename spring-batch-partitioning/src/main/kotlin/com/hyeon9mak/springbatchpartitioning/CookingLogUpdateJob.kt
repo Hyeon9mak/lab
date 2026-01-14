@@ -1,6 +1,9 @@
 package com.hyeon9mak.springbatchpartitioning
 
 import org.springframework.batch.core.configuration.annotation.StepScope
+import org.springframework.batch.infrastructure.item.Chunk
+import org.springframework.batch.infrastructure.item.ItemProcessor
+import org.springframework.batch.infrastructure.item.ItemWriter
 import org.springframework.batch.infrastructure.item.database.JdbcCursorItemReader
 import org.springframework.batch.infrastructure.item.database.builder.JdbcCursorItemReaderBuilder
 import org.springframework.beans.factory.annotation.Value
@@ -62,7 +65,7 @@ class CookingLogUpdateJob {
         @Value("#{stepExecutionContext['endCookedAt']}") endCookedAt: Instant,
         @Value("#{stepExecutionContext['endId']}") endId: String,
         dataSource: DataSource,
-    ): JdbcCursorItemReader<UpdatableCookingLog> {
+    ): JdbcCursorItemReader<EatableCookingLog> {
         val sql = """
         SELECT 
             id, name, description, status, cooked_at
@@ -73,7 +76,7 @@ class CookingLogUpdateJob {
         ORDER BY cooked_at, id
     """.trimIndent()
 
-        return JdbcCursorItemReaderBuilder<UpdatableCookingLog>()
+        return JdbcCursorItemReaderBuilder<EatableCookingLog>()
             .name("partitionReader")
             .dataSource(dataSource)
             .sql(sql)
@@ -88,19 +91,35 @@ class CookingLogUpdateJob {
             .build()
     }
 
+    private fun processor(): ItemProcessor<EatableCookingLog, AteCookingLog> {
+        return ItemProcessor { it.eat() }
+    }
+
+    @Bean("$STEP_NAME-writer")
+    @StepScope
+    fun writer(jdbcTemplate: JdbcTemplate): ItemWriter<AteCookingLog> {
+        val sql = """
+                UPDATE cooking_log
+                SET status = ?
+                WHERE id = ?::uuid
+            """.trimIndent()
+
+        return ItemWriter { items: Chunk<out AteCookingLog> ->
+            jdbcTemplate.batchUpdate(sql, items.items.map { arrayOf(it.status.name, it.id.toString()) })
+        }
+    }
+
     companion object {
         private const val JOB_NAME = "cooking-log-update"
         private const val STEP_NAME = "eat-step"
         private const val STEP_MANAGER = "eat-step-manager"
         private const val CHUNK_SIZE = 100_000
+
         private val KST_ZONE_ID: ZoneId = ZoneId.of("Asia/Seoul")
         private val ROW_MAPPER = RowMapper { rs, _ ->
-            UpdatableCookingLog(
+            EatableCookingLog(
                 id = rs.getObject("id", UUID::class.java),
-                name = rs.getString("name"),
-                description = rs.getString("description"),
                 status = CookingLogStatus.findByName(name = rs.getString("status")),
-                cookedAt = rs.getObject("cooked_at", Instant::class.java)
             )
 
         }
