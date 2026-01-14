@@ -51,7 +51,7 @@ open class CookingLogIdRangePartitioner(
                     id,
                     cooked_at,
                     NTILE(?) OVER (ORDER BY cooked_at, id) AS bucket
-                FROM your_table
+                FROM cooking_log
                 WHERE cooked_at >= ? AND cooked_at < ?
             )
             SELECT 
