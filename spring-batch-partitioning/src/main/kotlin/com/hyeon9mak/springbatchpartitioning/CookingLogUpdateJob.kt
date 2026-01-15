@@ -9,9 +9,8 @@ import org.springframework.batch.core.step.Step
 import org.springframework.batch.core.step.builder.StepBuilder
 import org.springframework.batch.infrastructure.item.Chunk
 import org.springframework.batch.infrastructure.item.ItemProcessor
+import org.springframework.batch.infrastructure.item.ItemReader
 import org.springframework.batch.infrastructure.item.ItemWriter
-import org.springframework.batch.infrastructure.item.database.JdbcCursorItemReader
-import org.springframework.batch.infrastructure.item.database.builder.JdbcCursorItemReaderBuilder
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -25,7 +24,6 @@ import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.UUID
-import javax.sql.DataSource
 
 @Configuration
 class CookingLogUpdateJob {
@@ -103,7 +101,7 @@ class CookingLogUpdateJob {
     fun eatStep(
         jobRepository: JobRepository,
         transactionManager: PlatformTransactionManager,
-        eatableCookLogReader: JdbcCursorItemReader<EatableCookingLog>,
+        eatableCookLogReader: ItemReader<EatableCookingLog>,
         ateCookingLogWriter: ItemWriter<AteCookingLog>,
     ): Step {
         return StepBuilder(STEP_NAME, jobRepository)
@@ -119,34 +117,20 @@ class CookingLogUpdateJob {
     @StepScope
     fun eatableCookLogReader(
         @Value("#{stepExecutionContext['startCookedAt']}") startCookedAt: Instant,
-        @Value("#{stepExecutionContext['startId']}") startId: String,
+        @Value("#{stepExecutionContext['startId']}") startId: UUID,
         @Value("#{stepExecutionContext['endCookedAt']}") endCookedAt: Instant,
-        @Value("#{stepExecutionContext['endId']}") endId: String,
-        dataSource: DataSource,
-    ): JdbcCursorItemReader<EatableCookingLog> {
-        val sql = """
-        SELECT 
-            id, status
-        FROM
-            cooking_log
-        WHERE (cooked_at, id) >= (?, ?::uuid)
-          AND (cooked_at, id) <= (?, ?::uuid)
-        ORDER BY cooked_at, id
-    """.trimIndent()
-
-        return JdbcCursorItemReaderBuilder<EatableCookingLog>()
-            .name("partitionReader")
-            .dataSource(dataSource)
-            .sql(sql)
-            .preparedStatementSetter { ps ->
-                ps.setObject(1, startCookedAt)
-                ps.setString(2, startId)
-                ps.setObject(3, endCookedAt)
-                ps.setString(4, endId)
-            }
-            .fetchSize(CHUNK_SIZE)
-            .rowMapper(ROW_MAPPER)
-            .build()
+        @Value("#{stepExecutionContext['endId']}") endId: UUID,
+        jdbcTemplate: JdbcTemplate,
+    ): ItemReader<EatableCookingLog> {
+        return NoOffsetPagingItemReader(
+            jdbcTemplate = jdbcTemplate,
+            rowMapper = ROW_MAPPER,
+            chunkSize = CHUNK_SIZE,
+            startCookedAt = startCookedAt,
+            startId = startId,
+            endCookedAt = endCookedAt,
+            endId = endId,
+        )
     }
 
     private fun processor(): ItemProcessor<EatableCookingLog, AteCookingLog> {
@@ -159,7 +143,7 @@ class CookingLogUpdateJob {
         val sql = """
                 UPDATE cooking_log
                 SET status = ?
-                WHERE id = ?::uuid
+                WHERE id = ?
             """.trimIndent()
 
         return ItemWriter { items: Chunk<out AteCookingLog> ->
@@ -170,7 +154,7 @@ class CookingLogUpdateJob {
     companion object {
         private const val JOB_NAME = "cooking-log-update"
         private const val STEP_NAME = "eat-cooking-log-step"
-        private const val CHUNK_SIZE = 1_000
+        private const val CHUNK_SIZE = 10
         private const val POOL_SIZE = 5
 
         private val KST_ZONE_ID: ZoneId = ZoneId.of("Asia/Seoul")
@@ -178,8 +162,8 @@ class CookingLogUpdateJob {
             EatableCookingLog(
                 id = rs.getObject("id", UUID::class.java),
                 status = CookingLogStatus.findByName(name = rs.getString("status")),
+                cookedAt = rs.getObject("cooked_at", Instant::class.java),
             )
-
         }
     }
 }

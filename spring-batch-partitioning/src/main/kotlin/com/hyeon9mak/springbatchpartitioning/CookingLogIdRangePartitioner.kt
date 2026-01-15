@@ -82,6 +82,6 @@ open class CookingLogIdRangePartitioner(
     )
 
     companion object {
-        private const val PARTITION_SIZE = 100_000
+        private const val PARTITION_SIZE = 10
     }
 }

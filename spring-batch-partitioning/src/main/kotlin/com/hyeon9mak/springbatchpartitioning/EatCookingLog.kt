@@ -1,10 +1,12 @@
 package com.hyeon9mak.springbatchpartitioning
 
+import java.time.Instant
 import java.util.UUID
 
 class EatableCookingLog(
     val id: UUID,
     val status: CookingLogStatus,
+    val cookedAt: Instant,
 ) {
     fun eat(): AteCookingLog {
         return AteCookingLog(
