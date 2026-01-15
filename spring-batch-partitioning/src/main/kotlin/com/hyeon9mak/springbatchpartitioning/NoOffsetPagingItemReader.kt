@@ -40,6 +40,7 @@ class NoOffsetPagingItemReader(
     private fun Iterator<Any>.notHasNext(): Boolean = !this.hasNext()
 
     private fun fetchNextChunk() {
+        LOGGER.info { "[${Thread.currentThread().name}] Fetching chunk - Current cursor: cookedAt=$lastCookedAt, id=$lastId, End boundary: cookedAt=$endCookedAt, id=$endId" }
         val sql = """
             SELECT id, status, cooked_at
             FROM cooking_log
@@ -64,8 +65,13 @@ class NoOffsetPagingItemReader(
             val lastItem = items.last()
             lastCookedAt = lastItem.cookedAt
             lastId = lastItem.id
+            LOGGER.info { "[${Thread.currentThread().name}] Fetched ${items.size} items - Next cursor: cookedAt=$lastCookedAt, id=$lastId" }
         }
 
         buffer = items.iterator()
+    }
+
+    companion object {
+        private val LOGGER = mu.KotlinLogging.logger {}
     }
 }

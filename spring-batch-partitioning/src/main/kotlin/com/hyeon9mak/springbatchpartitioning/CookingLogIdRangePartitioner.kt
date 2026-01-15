@@ -23,8 +23,11 @@ open class CookingLogIdRangePartitioner(
 
         val actualGridSize = ((totalCount + PARTITION_SIZE - 1) / PARTITION_SIZE).coerceAtLeast(1)
         val boundaries = fetchPartitionBoundaries(actualGridSize, startDate, endDate)
-        
+
+        LOGGER.info { "totalCount=$totalCount, gridSize=$gridSize, actualGridSize=$actualGridSize" }
+
         return boundaries.mapIndexed { index, boundary ->
+            LOGGER.info { "Partition[$index] - Range: cookedAt=[${boundary.startCookedAt} ~ ${boundary.endCookedAt}], id=[${boundary.startId} ~ ${boundary.endId}]" }
             "partition$index" to ExecutionContext().apply {
                 put("startCookedAt", boundary.startCookedAt)
                 putString("startId", boundary.startId.toString())
@@ -83,5 +86,6 @@ open class CookingLogIdRangePartitioner(
 
     companion object {
         private const val PARTITION_SIZE = 10
+        private val LOGGER = mu.KotlinLogging.logger {}
     }
 }

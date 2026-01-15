@@ -130,7 +130,9 @@ class CookingLogUpdateJob {
             startId = startId,
             endCookedAt = endCookedAt,
             endId = endId,
-        )
+        ).also {
+            LOGGER.info { "[${Thread.currentThread().name}] ItemReader initialized - Range: cookedAt=[$startCookedAt ~ $endCookedAt], id=[$startId ~ $endId]" }
+        }
     }
 
     private fun processor(): ItemProcessor<EatableCookingLog, AteCookingLog> {
@@ -157,6 +159,7 @@ class CookingLogUpdateJob {
         private const val CHUNK_SIZE = 10
         private const val POOL_SIZE = 5
 
+        private val LOGGER = mu.KotlinLogging.logger {}
         private val KST_ZONE_ID: ZoneId = ZoneId.of("Asia/Seoul")
         private val ROW_MAPPER = RowMapper { rs, _ ->
             EatableCookingLog(
