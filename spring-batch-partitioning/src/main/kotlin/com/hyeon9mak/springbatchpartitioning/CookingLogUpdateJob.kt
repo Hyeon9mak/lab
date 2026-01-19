@@ -82,6 +82,7 @@ class CookingLogUpdateJob {
             jdbcTemplate = jdbcTemplate,
             startDate = startDateInstant,
             endDate = endDateInstant,
+            dataCountPerPartition = CHUNK_SIZE,
         )
     }
 
@@ -156,7 +157,7 @@ class CookingLogUpdateJob {
     companion object {
         private const val JOB_NAME = "cooking-log-update"
         private const val STEP_NAME = "eat-cooking-log-step"
-        private const val CHUNK_SIZE = 10
+        private const val CHUNK_SIZE = 100
         private const val POOL_SIZE = 5
 
         private val LOGGER = mu.KotlinLogging.logger {}

@@ -13,6 +13,7 @@ open class CookingLogIdRangePartitioner(
     private val jdbcTemplate: JdbcTemplate,
     private val startDate: Instant,
     private val endDate: Instant,
+    private val dataCountPerPartition: Int,
 ) : Partitioner {
 
     override fun partition(gridSize: Int): Map<String, ExecutionContext> {
@@ -21,7 +22,7 @@ open class CookingLogIdRangePartitioner(
             return emptyMap()
         }
 
-        val actualGridSize = ((totalCount + PARTITION_SIZE - 1) / PARTITION_SIZE).coerceAtLeast(1)
+        val actualGridSize = ((totalCount + dataCountPerPartition - 1) / dataCountPerPartition).coerceAtLeast(1)
         val boundaries = fetchPartitionBoundaries(actualGridSize, startDate, endDate)
 
         LOGGER.info { "totalCount=$totalCount, gridSize=$gridSize, actualGridSize=$actualGridSize" }
@@ -85,7 +86,6 @@ open class CookingLogIdRangePartitioner(
     )
 
     companion object {
-        private const val PARTITION_SIZE = 10
         private val LOGGER = mu.KotlinLogging.logger {}
     }
 }
