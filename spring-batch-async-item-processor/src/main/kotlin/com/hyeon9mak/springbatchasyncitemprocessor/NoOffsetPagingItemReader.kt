@@ -11,23 +11,15 @@ class NoOffsetPagingItemReader(
     private val rowMapper: RowMapper<EatableCookingLog>,
     private val chunkSize: Int,
     startCookedAt: Instant,
-    startId: UUID,
     private val endCookedAt: Instant,
-    private val endId: UUID,
 ) : ItemReader<EatableCookingLog> {
     /**
-     * 현재 구조에서는 startCookedAt, startId 만으로 pagination 을 수행하고 있다.
-     * 그러나 endCookedAt, endId 가 고정되어 있어, pagination 이 충분히 수행되기 전까지 scan 범위가 넓다는 단점이 존재한다.
-     *
-     * startCookedAt, startId 과 마찬가지로 endCookedAt, endId 도 현행화해서 관리할 경우
-     * 첫 page 부터 chunk size 만큼의 scan 만 진행하기 때문에 속도면에서 훨씬 효율적이다.
-     *
-     * 그러나, 첫 번째 페이지와 마지막 페이지에 대한 추가 조건문이 필요해 코드 복잡도가 증가한다.
-     * partitioning 및 pagination 은 그 자체적으로 대량의 데이터 조회를 효율적으로 처리하기 위한 기법이므로,
-     * 이미 충분한 범위 축소가 이루어졌다고 가정하고 단순화를 선택했다.
+     * No-offset 기반 페이징: (cooked_at, id) 튜플 커서를 사용
+     * ID 경계는 최소/최대값으로 자동 설정하여 시간 범위 내 모든 데이터 포함
      */
     private var lastCookedAt: Instant = startCookedAt
-    private var lastId: UUID = startId
+    private var lastId: UUID = UUID(0, 0)
+    private val endId: UUID = UUID.fromString("ffffffff-ffff-ffff-ffff-ffffffffffff")
     private var buffer: Iterator<EatableCookingLog> = emptyList<EatableCookingLog>().iterator()
     private var isFirstFetch: Boolean = true
 

@@ -21,7 +21,7 @@ repositories {
 
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-batch")
-//    implementation("org.springframework.boot:spring-boot-starter-batch-integration")
+    implementation("org.springframework.batch:spring-batch-integration:6.0.0")
     implementation("org.springframework.boot:spring-boot-starter-data-jdbc")
     implementation("org.springframework.boot:spring-boot-starter-flyway")
     implementation("org.flywaydb:flyway-mysql")
