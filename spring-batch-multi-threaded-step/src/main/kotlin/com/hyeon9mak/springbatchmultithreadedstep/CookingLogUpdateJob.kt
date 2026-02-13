@@ -1,4 +1,4 @@
-package com.hyeon9mak.springbatchasyncitemprocessor
+package com.hyeon9mak.springbatchmultithreadedstep
 
 import org.springframework.batch.core.configuration.annotation.StepScope
 import org.springframework.batch.core.job.Job
@@ -10,8 +10,10 @@ import org.springframework.batch.infrastructure.item.Chunk
 import org.springframework.batch.infrastructure.item.ItemProcessor
 import org.springframework.batch.infrastructure.item.ItemReader
 import org.springframework.batch.infrastructure.item.ItemWriter
-import org.springframework.batch.integration.async.AsyncItemProcessor
-import org.springframework.batch.integration.async.AsyncItemWriter
+import org.springframework.batch.infrastructure.item.database.Order
+import org.springframework.batch.infrastructure.item.database.builder.JdbcPagingItemReaderBuilder
+import org.springframework.batch.infrastructure.item.database.support.MySqlPagingQueryProvider
+import org.springframework.batch.infrastructure.item.support.builder.SynchronizedItemStreamReaderBuilder
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -25,7 +27,7 @@ import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.UUID
-import java.util.concurrent.Future
+import javax.sql.DataSource
 
 @Configuration
 class CookingLogUpdateJob {
@@ -46,7 +48,7 @@ class CookingLogUpdateJob {
         val executor = ThreadPoolTaskExecutor()
         executor.corePoolSize = POOL_SIZE
         executor.maxPoolSize = POOL_SIZE
-        executor.setThreadNamePrefix("async-processor-")
+        executor.setThreadNamePrefix("multi-threaded-step-")
         executor.setWaitForTasksToCompleteOnShutdown(true)
         executor.initialize()
         return executor
@@ -56,16 +58,17 @@ class CookingLogUpdateJob {
     fun eatStep(
         jobRepository: JobRepository,
         transactionManager: PlatformTransactionManager,
+        cookingLogUpdateExecutor: TaskExecutor,
         eatableCookLogReader: ItemReader<EatableCookingLog>,
-        asyncItemProcessor: AsyncItemProcessor<EatableCookingLog, AteCookingLog>,
-        ateCookingLogAsyncWriter: AsyncItemWriter<AteCookingLog>,
+        eatCookLogProcessor: ItemProcessor<EatableCookingLog, AteCookingLog>,
+        ateCookingLogWriter: ItemWriter<AteCookingLog>,
     ): Step {
         return StepBuilder(STEP_NAME, jobRepository)
-            .chunk<EatableCookingLog, Future<AteCookingLog>>(CHUNK_SIZE)
-            .transactionManager(transactionManager)
+            .chunk<EatableCookingLog, AteCookingLog>(CHUNK_SIZE, transactionManager)
             .reader(eatableCookLogReader)
-            .processor(asyncItemProcessor)
-            .writer(ateCookingLogAsyncWriter)
+            .processor(eatCookLogProcessor)
+            .writer(ateCookingLogWriter)
+            .taskExecutor(cookingLogUpdateExecutor)
             .build()
     }
 
@@ -74,7 +77,7 @@ class CookingLogUpdateJob {
     fun eatableCookLogReader(
         @Value("#{jobParameters['startCookedAt']}") startCookedAtString: String,
         @Value("#{jobParameters['endCookedAt']}") endCookedAtString: String,
-        jdbcTemplate: JdbcTemplate,
+        dataSource: DataSource,
     ): ItemReader<EatableCookingLog> {
         val startDateInstant = LocalDate.parse(startCookedAtString, DateTimeFormatter.ISO_LOCAL_DATE)
             .atStartOfDay(KST_ZONE_ID)
@@ -83,32 +86,47 @@ class CookingLogUpdateJob {
             .atStartOfDay(KST_ZONE_ID)
             .toInstant()
 
-        return NoOffsetPagingItemReader(
-            jdbcTemplate = jdbcTemplate,
-            rowMapper = ROW_MAPPER,
-            chunkSize = CHUNK_SIZE,
-            startCookedAt = startDateInstant,
-            endCookedAt = endDateInstant,
-        ).also {
-            LOGGER.info { "[${Thread.currentThread().name}] ItemReader initialized - Range: cookedAt=[$startDateInstant ~ $endDateInstant]" }
-        }
+        val pagingItemReader = JdbcPagingItemReaderBuilder<EatableCookingLog>()
+            .dataSource(dataSource)
+            .fetchSize(CHUNK_SIZE)
+            .rowMapper { rs, rowNum ->
+                ROW_MAPPER.mapRow(rs, rowNum).also {
+                    LOGGER.info { "[${Thread.currentThread().name}] Read cooking log: id=${it.id}, cookedAt=${it.cookedAt}" }
+                }
+            }
+            .queryProvider(
+                MySqlPagingQueryProvider().apply {
+                    setSelectClause("id, status, cooked_at")
+                    setFromClause("from cooking_log")
+                    setWhereClause("where status = 'COOKED' and cooked_at >= :startCookedAt and cooked_at < :endCookedAt")
+                    setSortKeys(
+                        mapOf(
+                            "cooked_at" to Order.ASCENDING,
+                            "id" to Order.ASCENDING,
+                        )
+                    )
+                }
+            )
+            .parameterValues(
+                mapOf(
+                    "startCookedAt" to startDateInstant,
+                    "endCookedAt" to endDateInstant,
+                )
+            )
+            .name("eatableCookLogReader")
+            .saveState(false)
+            .build()
+
+        return SynchronizedItemStreamReaderBuilder<EatableCookingLog>()
+            .delegate(pagingItemReader)
+            .build()
     }
 
     @Bean
-    fun asyncItemProcessor(): AsyncItemProcessor<EatableCookingLog, AteCookingLog> {
-        val processor = ItemProcessor<EatableCookingLog, AteCookingLog> {
-            it.eat().also { LOGGER.info { "[${Thread.currentThread().name}] ate food." } }
+    fun eatCookLogProcessor(): ItemProcessor<EatableCookingLog, AteCookingLog> {
+        return ItemProcessor {
+            it.eat().also { LOGGER.info { "[${Thread.currentThread().name}] ate food. ${it.id}" } }
         }
-        val asyncItemProcessor = AsyncItemProcessor(processor)
-        asyncItemProcessor.setTaskExecutor(cookingLogUpdateExecutor())
-        return asyncItemProcessor
-    }
-
-    @Bean
-    fun ateCookingLogAsyncWriter(
-        ateCookingLogWriter: ItemWriter<AteCookingLog>,
-    ): AsyncItemWriter<AteCookingLog> {
-        return AsyncItemWriter(ateCookingLogWriter)
     }
 
     @Bean
@@ -121,14 +139,14 @@ class CookingLogUpdateJob {
 
         return ItemWriter { items: Chunk<out AteCookingLog> ->
             jdbcTemplate.batchUpdate(sql, items.items.map { arrayOf(it.status.name, it.id.toString()) })
-                .also { LOGGER.info { "[${Thread.currentThread().name}] Wrote ate cooking logs to database." } }
+                .also { LOGGER.info { "[${Thread.currentThread().name}] Wrote ate cooking logs to database. ${items.map { it.id }}" } }
         }
     }
 
     companion object {
         private const val JOB_NAME = "cooking-log-update"
         private const val STEP_NAME = "eat-cooking-log-step"
-        private const val CHUNK_SIZE = 100
+        private const val CHUNK_SIZE = 10
         private const val POOL_SIZE = 5
 
         private val LOGGER = mu.KotlinLogging.logger {}
