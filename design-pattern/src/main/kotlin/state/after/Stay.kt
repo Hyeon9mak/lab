@@ -1,0 +1,11 @@
+package state.after
+
+class Stay(cards: Cards) : Finished(cards) {
+    override fun judgementGameResult(otherScore: Score): GameResult {
+        return when {
+            otherScore.isBlackjack -> GameResult.LOSE
+            otherScore.isBust -> GameResult.WIN
+            else -> this.score().compareGameResult(other = otherScore)
+        }
+    }
+}
